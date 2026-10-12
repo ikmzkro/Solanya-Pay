@@ -21,7 +21,7 @@ fastify.listen(
   {
     port: PORT,
     host: "localhost",
-    // localhost は IPv4/IPv6 の両方で待ち受けるため、ログは localhost 表記に揃える
+    // "localhost" listens on both IPv4 and IPv6, so always log it as localhost
     listenTextResolver: () => `Server listening at http://localhost:${PORT}`,
   },
   (err) => {

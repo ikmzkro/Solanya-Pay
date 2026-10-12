@@ -4,29 +4,29 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/.env.development"
 
-# ── 事前チェック ────────────────────────────────────────────
+# ── Preflight checks ────────────────────────────────────────
 if ! command -v cloudflared &>/dev/null; then
-  echo "[!] cloudflared が見つかりません（macOS: brew install cloudflared）"
+  echo "[!] cloudflared not found (https://github.com/cloudflare/cloudflared/releases)"
   exit 1
 fi
 
 if [[ ! -f "$ENV_FILE" ]] || ! grep -q '^RECIPIENT_PUBKEY=.' "$ENV_FILE"; then
-  echo "[!] ${ENV_FILE} に RECIPIENT_PUBKEY（受取ウォレットのアドレス）を設定してください"
+  echo "[!] Set RECIPIENT_PUBKEY (the wallet that receives USDC) in ${ENV_FILE}"
   exit 1
 fi
 
-# ── ポート 3000 を解放 ───────────────────────────────────────
+# ── Free port 3000 ──────────────────────────────────────────
 if lsof -ti:3000 &>/dev/null; then
-  echo "[*] ポート 3000 を解放します"
+  echo "[*] Freeing port 3000"
   lsof -ti:3000 | xargs kill -9
 fi
 
-# ── cloudflared トンネル起動（URL を捕捉） ──────────────────
+# ── Start the cloudflared tunnel and capture its URL ────────
 TUNNEL_LOG=$(mktemp)
 cloudflared tunnel --url http://localhost:3000 >"$TUNNEL_LOG" 2>&1 &
 CLOUDFLARED_PID=$!
 
-echo "[*] cloudflared 起動中 (PID=$CLOUDFLARED_PID)..."
+echo "[*] Starting cloudflared (PID=$CLOUDFLARED_PID)..."
 
 TUNNEL_URL=""
 for i in $(seq 1 30); do
@@ -38,19 +38,19 @@ for i in $(seq 1 30); do
 done
 
 if [[ -z "$TUNNEL_URL" ]]; then
-  echo "[!] cloudflared の URL を取得できませんでした。ログ:"
+  echo "[!] Could not get the cloudflared URL. Log:"
   cat "$TUNNEL_LOG"
   kill "$CLOUDFLARED_PID" 2>/dev/null || true
   exit 1
 fi
 
-# BASE_URL を .env.development に書き込む
+# Write BASE_URL to .env.development
 grep -v '^BASE_URL=' "$ENV_FILE" >"${ENV_FILE}.tmp" || true
 echo "BASE_URL=${TUNNEL_URL}" >>"${ENV_FILE}.tmp"
 mv "${ENV_FILE}.tmp" "$ENV_FILE"
-echo "[+] BASE_URL=${TUNNEL_URL} を ${ENV_FILE} に書き込みました"
+echo "[+] Wrote BASE_URL=${TUNNEL_URL} to ${ENV_FILE}"
 
-# ── バックエンド起動 ────────────────────────────────────────
-echo "[*] バックエンドを起動します"
+# ── Start the backend ───────────────────────────────────────
+echo "[*] Starting the backend"
 cd "${SCRIPT_DIR}/.."
 npm run dev

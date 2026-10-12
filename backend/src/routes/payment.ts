@@ -16,7 +16,7 @@ export async function paymentRoute(fastify: FastifyInstance) {
     const reference = Keypair.generate().publicKey;
     const ref58 = reference.toBase58();
 
-    // 支払いリクエストを保存（/transaction エンドポイントで参照）
+    // Save the payment request (looked up by the /transaction endpoint)
     savePayment({ usdcAmount: usdc_amount, reference: ref58 });
 
     // Transaction Request URL: solana:https://...

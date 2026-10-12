@@ -1,27 +1,26 @@
 import { PublicKey } from "@solana/web3.js";
 
-// USDCミントアドレス
-// Solanaでは各トークン（USDC等）の「種類の定義」がブロックチェーン上のアカウントとして存在する。
-// このアドレスはUSDCの仕様（小数点桁数=6、発行権限者など）を持つアカウントであり、
-// 残高が入っている場所ではない。
+// USDC mint address
+// On Solana, each token type (such as USDC) is defined by an on-chain mint account.
+// This account holds the token's spec (decimals = 6, mint authority, etc.),
+// not anyone's balance.
 //
-// ユーザのUSDC残高は「USDC_MINT + ユーザの公開鍵」から導出される
-// Associated Token Account (ATA) に格納されている。
-// → getAssociatedTokenAddress(USDC_MINT, userPubkey) で計算できる。
+// A user's USDC balance lives in the Associated Token Account (ATA)
+// derived from USDC_MINT + the user's public key.
+// -> getAssociatedTokenAddress(USDC_MINT, userPubkey)
 //
-// TODO: mainnet移行時は mainnet-beta公式アドレス(EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v)へ変更すること
+// TODO: switch to the official mainnet-beta mint (EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v) for mainnet
 export const USDC_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 
-// TODO: 本番の受取ウォレットのアドレスを RECIPIENT_PUBKEY 環境変数に設定すること
-//       未設定時はシステムプログラムアドレス(1111...1)へ送金されるため必ず設定すること
+// Wallet that receives USDC. Set RECIPIENT_PUBKEY in .env (the server refuses to start without it)
 if (!process.env.RECIPIENT_PUBKEY) {
   throw new Error("RECIPIENT_PUBKEY is not set in .env");
 }
 export const RECIPIENT = new PublicKey(process.env.RECIPIENT_PUBKEY);
 
-// USDCの小数点桁数（Solana上で常に6桁固定）
+// USDC decimals (always 6 on Solana)
 export const USDC_DECIMALS = 6;
 
-// バックエンドの公開URL（本番は環境変数で上書き）
+// Public URL of the backend (overridden by BASE_URL)
 export const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
 

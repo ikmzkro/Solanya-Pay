@@ -21,12 +21,12 @@ const connection = new Connection(
 );
 
 export async function transactionRoute(fastify: FastifyInstance) {
-  // ① ウォレットがラベル・アイコンを取得
+  // (1) The wallet fetches the label and icon
   fastify.get<{ Querystring: TransactionQuery }>(
     "/transaction",
     async (request, reply) => {
       const { reference } = request.query;
-      fastify.log.info({ step: "①", reference }, "[SEQ] GET /transaction — ウォレットがQRをスキャン、label/iconを取得");
+      fastify.log.info({ step: "1", reference }, "[SEQ] GET /transaction - wallet scanned the QR code, returning label/icon");
       return reply.send({
         label: "Solanya Pay",
         icon: `${BASE_URL}/icon.svg`,
@@ -34,30 +34,30 @@ export async function transactionRoute(fastify: FastifyInstance) {
     }
   );
 
-  // ② ウォレットがユーザ公開鍵を送信 → バックエンドが Tx を構築して返す
+  // (2) The wallet sends the user's public key -> the backend builds and returns the transaction
   fastify.post<{ Querystring: TransactionQuery; Body: TransactionBody }>(
     "/transaction",
     async (request, reply) => {
       const { reference } = request.query;
       const { account } = request.body;
 
-      fastify.log.info({ step: "②", reference, account }, "[SEQ] POST /transaction — ウォレットが公開鍵を送信、Tx構築開始");
+      fastify.log.info({ step: "2", reference, account }, "[SEQ] POST /transaction - wallet sent its public key, building transaction");
 
       if (!reference) {
-        fastify.log.warn("[SEQ] ② エラー: reference がない");
+        fastify.log.warn("[SEQ] (2) error: missing reference");
         return reply.status(400).send({ error: "reference is required" });
       }
       if (!account) {
-        fastify.log.warn("[SEQ] ② エラー: account がない");
+        fastify.log.warn("[SEQ] (2) error: missing account");
         return reply.status(400).send({ error: "account is required" });
       }
 
       const payment = getPayment(reference);
       if (!payment) {
-        fastify.log.warn({ reference }, "[SEQ] ② エラー: 支払いリクエストが見つからない（期限切れ or 不正なreference）");
+        fastify.log.warn({ reference }, "[SEQ] (2) error: payment request not found (expired or invalid reference)");
         return reply.status(404).send({ error: "Payment request not found or expired" });
       }
-      fastify.log.info({ usdcAmount: payment.usdcAmount }, "[SEQ] ② 支払いリクエストを取得");
+      fastify.log.info({ usdcAmount: payment.usdcAmount }, "[SEQ] (2) payment request found");
 
       let userPubkey: PublicKey;
       let refPubkey: PublicKey;
@@ -65,41 +65,41 @@ export async function transactionRoute(fastify: FastifyInstance) {
         userPubkey = new PublicKey(account);
         refPubkey = new PublicKey(reference);
       } catch {
-        fastify.log.warn("[SEQ] ② エラー: 公開鍵のパース失敗");
+        fastify.log.warn("[SEQ] (2) error: failed to parse public key");
         return reply.status(400).send({ error: "Invalid public key" });
       }
 
-      // ユーザと受取先の USDC トークンアカウントを解決
+      // Resolve the USDC token accounts of the user and the recipient
       const userTokenAccount = await getAssociatedTokenAddress(USDC_MINT, userPubkey);
       const recipientTokenAccount = await getAssociatedTokenAddress(USDC_MINT, RECIPIENT);
-      fastify.log.info({ userTokenAccount: userTokenAccount.toBase58(), recipientTokenAccount: recipientTokenAccount.toBase58() }, "[SEQ] ② トークンアカウント解決");
+      fastify.log.info({ userTokenAccount: userTokenAccount.toBase58(), recipientTokenAccount: recipientTokenAccount.toBase58() }, "[SEQ] (2) token accounts resolved");
 
       const transferAmount = BigInt(Math.round(payment.usdcAmount * 10 ** USDC_DECIMALS));
-      fastify.log.info({ transferAmount: transferAmount.toString(), usdcAmount: payment.usdcAmount }, "[SEQ] ② 送金額計算");
+      fastify.log.info({ transferAmount: transferAmount.toString(), usdcAmount: payment.usdcAmount }, "[SEQ] (2) transfer amount calculated");
 
       const { blockhash } = await connection.getLatestBlockhash();
-      fastify.log.info({ blockhash }, "[SEQ] ② blockhash取得");
+      fastify.log.info({ blockhash }, "[SEQ] (2) blockhash fetched");
 
       const tx = new Transaction();
-      tx.feePayer = userPubkey; // ユーザが SOL でガス代を負担
+      tx.feePayer = userPubkey; // the user pays the network fee in SOL
       tx.recentBlockhash = blockhash;
 
-      // 受取先ATAが存在しない場合は作成（新規ウォレットの初回受取時に必要）
+      // Create the recipient's ATA if it doesn't exist (needed the first time a new wallet receives USDC)
       tx.add(
         createAssociatedTokenAccountIdempotentInstruction(
-          userPubkey,           // 作成費用の支払者
+          userPubkey,           // pays the account creation fee
           recipientTokenAccount,
           RECIPIENT,
           USDC_MINT
         )
       );
 
-      // USDC 送金命令（reference 公開鍵をリードオンリーキーとして付加してポーリング検出を可能にする）
+      // USDC transfer instruction (the reference key is attached as a read-only key so the payment can be found on-chain)
       const transferIx = createTransferCheckedInstruction(
-        userTokenAccount,  // 送信元
+        userTokenAccount,  // source
         USDC_MINT,
-        recipientTokenAccount, // 送信先（Solanya Pay 受取ウォレット）
-        userPubkey,            // 送信者（署名者）
+        recipientTokenAccount, // destination (Solanya Pay recipient wallet)
+        userPubkey,            // owner (signer)
         transferAmount,
         USDC_DECIMALS
       );
@@ -108,15 +108,15 @@ export async function transactionRoute(fastify: FastifyInstance) {
 
       const simResult = await connection.simulateTransaction(tx);
       if (simResult.value.err) {
-        fastify.log.error({ err: simResult.value.err, logs: simResult.value.logs }, "[SEQ] ② シミュレーション失敗");
+        fastify.log.error({ err: simResult.value.err, logs: simResult.value.logs }, "[SEQ] (2) simulation failed");
       } else {
-        fastify.log.info({ logs: simResult.value.logs }, "[SEQ] ② シミュレーション成功");
+        fastify.log.info({ logs: simResult.value.logs }, "[SEQ] (2) simulation succeeded");
       }
 
       const serialized = tx.serialize({ requireAllSignatures: false });
       const base64 = serialized.toString("base64");
 
-      fastify.log.info({ usdcAmount: payment.usdcAmount }, "[SEQ] ② Tx構築完了 → ウォレットへ返却。次: ユーザが承認→署名→broadcast");
+      fastify.log.info({ usdcAmount: payment.usdcAmount }, "[SEQ] (2) transaction built and returned to the wallet. Next: user approves -> signs -> broadcasts");
       return reply.send({
         transaction: base64,
         message: `Solanya Pay: ${payment.usdcAmount} USDC 送るにゃ 🐾`,

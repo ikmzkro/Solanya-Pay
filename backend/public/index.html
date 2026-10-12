@@ -30,7 +30,7 @@
       margin-top: 40px;
     }
 
-    /* 猫耳 */
+    /* cat ears */
     .demo::before,
     .demo::after {
       content: '';
@@ -67,7 +67,7 @@
 
     #qr-wrapper { position: relative; }
 
-    /* QR の中央に猫 */
+    /* cat in the middle of the QR code */
     .qr-cat {
       position: absolute;
       top: 50%;
@@ -279,9 +279,9 @@
           throw new Error(data.error ?? `HTTP ${res.status}`);
         }
 
-        // solana: URL をデコード
+        // Decode the solana: URL
         const solanaUrl = decodeURIComponent(data.qr_url.replace(/^solana:/, ''));
-        // QR コードに埋め込む文字列は元の solana:... URL
+        // The QR code encodes the original solana:... URL
         const qrContent = data.qr_url;
 
         document.getElementById('usdc-val').textContent = `${data.usdc_amount} USDC`;
