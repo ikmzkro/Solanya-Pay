@@ -6,6 +6,12 @@
 
 <p align="center">Send USDC with Solana Pay, cat-style 🐾</p>
 
+## Demo
+
+https://github.com/user-attachments/assets/a6fab1b3-6e2f-4100-aea6-4f729b7df7e4
+
+(Also available in [issue #1](https://github.com/ikmzkro/Solanya-Pay/issues/1).)
+
 ---
 
 ## Overview
