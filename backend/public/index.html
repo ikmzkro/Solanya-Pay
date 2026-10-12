@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solanya Pay</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .demo {
+      background: #16213e;
+      border: 2px solid #0f3460;
+      border-radius: 12px;
+      padding: 40px 48px;
+      width: 420px;
+      box-shadow: 0 0 40px rgba(153, 69, 255, 0.35);
+      position: relative;
+      margin-top: 40px;
+    }
+
+    /* 猫耳 */
+    .demo::before,
+    .demo::after {
+      content: '';
+      position: absolute;
+      top: -38px;
+      width: 0;
+      height: 0;
+      border-left: 34px solid transparent;
+      border-right: 34px solid transparent;
+      border-bottom: 44px solid #0f3460;
+    }
+    .demo::before { left: 36px; transform: rotate(-12deg); }
+    .demo::after  { right: 36px; transform: rotate(12deg); }
+
+    .logo {
+      display: block;
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 8px;
+      animation: nod 3s ease-in-out infinite;
+    }
+
+    @keyframes nod {
+      0%, 100% { transform: rotate(0deg); }
+      50%      { transform: rotate(-8deg); }
+    }
+
+    .tagline {
+      text-align: center;
+      font-size: 0.72rem;
+      color: #888;
+      margin: -24px 0 28px;
+    }
+
+    #qr-wrapper { position: relative; }
+
+    /* QR の中央に猫 */
+    .qr-cat {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 56px;
+      height: 56px;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border-radius: 50%;
+      padding: 4px;
+    }
+
+    .paws {
+      text-align: center;
+      font-size: 0.9rem;
+      margin-top: 20px;
+      opacity: 0.5;
+      letter-spacing: 0.6em;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+      color: #14F195;
+      margin-bottom: 32px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 6px;
+      letter-spacing: 0.1em;
+    }
+
+    .field input {
+      width: 100%;
+      background: #0d1b2a;
+      border: 1px solid #0f3460;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 1.4rem;
+      padding: 10px 14px;
+      outline: none;
+      text-align: right;
+    }
+
+    .field input:focus { border-color: #a0c4ff; }
+
+    .unit {
+      text-align: right;
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    button {
+      margin-top: 24px;
+      width: 100%;
+      background: #0f3460;
+      border: none;
+      border-radius: 6px;
+      color: #a0c4ff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      letter-spacing: 0.1em;
+      padding: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #1a4a80; }
+    button:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+    #result { margin-top: 32px; }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-bottom: 6px;
+    }
+
+    .info-row span:last-child { color: #e0e0e0; }
+
+    #qr-wrapper {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      background: #fff;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    #qr-canvas { display: block; }
+
+    .hint {
+      text-align: center;
+      font-size: 0.72rem;
+      color: #666;
+      margin-top: 10px;
+    }
+
+    .url-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .url-row input {
+      flex: 1;
+      background: #0d1b2a;
+      border: 1px solid #0f3460;
+      border-radius: 4px;
+      color: #666;
+      font-family: inherit;
+      font-size: 0.65rem;
+      padding: 6px 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .url-row button {
+      margin-top: 0;
+      width: auto;
+      padding: 6px 12px;
+      font-size: 0.7rem;
+    }
+
+    .error {
+      color: #ff6b6b;
+      font-size: 0.8rem;
+      margin-top: 12px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo">
+    <img class="logo" src="/icon.svg" alt="Solanya Pay の猫">
+    <h1>Solanya Pay</h1>
+    <p class="tagline">USDC を送るにゃ</p>
+
+    <div class="field">
+      <label>送金金額（にゃん）</label>
+      <input id="usdc" type="number" value="1" min="0.01" step="0.01">
+      <div class="unit">USDC</div>
+    </div>
+
+    <button id="btn" onclick="requestQR()">🐾 QR コードを生成にゃ</button>
+
+    <div id="result" style="display:none">
+      <div class="info-row">
+        <span>送金 USDC</span>
+        <span id="usdc-val"></span>
+      </div>
+      <div id="qr-wrapper">
+        <div id="qr-canvas"></div>
+        <img class="qr-cat" src="/icon.svg" alt="">
+      </div>
+      <p class="hint">Phantom モバイルで QR をスキャンしてにゃ</p>
+      <div class="url-row">
+        <input id="solana-url" type="text" readonly>
+        <button onclick="copyUrl()">コピー</button>
+      </div>
+    </div>
+
+    <p id="error" class="error" style="display:none"></p>
+    <p class="paws">🐾🐾🐾</p>
+  </div>
+
+  <script>
+    let qrInstance = null;
+
+    function copyUrl() {
+      const el = document.getElementById('solana-url');
+      navigator.clipboard.writeText(el.value).then(() => {
+        const btn = el.nextElementSibling;
+        btn.textContent = 'にゃ！';
+        setTimeout(() => { btn.textContent = 'コピー'; }, 1500);
+      });
+    }
+
+    async function requestQR() {
+      const usdc = parseFloat(document.getElementById('usdc').value);
+      if (!usdc || usdc <= 0) return;
+
+      const btn = document.getElementById('btn');
+      btn.disabled = true;
+      btn.textContent = 'ねこ考え中...';
+
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('error').style.display = 'none';
+
+      try {
+        const res = await fetch('/payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usdc_amount: usdc }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error ?? `HTTP ${res.status}`);
+        }
+
+        // solana: URL をデコード
+        const solanaUrl = decodeURIComponent(data.qr_url.replace(/^solana:/, ''));
+        // QR コードに埋め込む文字列は元の solana:... URL
+        const qrContent = data.qr_url;
+
+        document.getElementById('usdc-val').textContent = `${data.usdc_amount} USDC`;
+
+        const container = document.getElementById('qr-canvas');
+        container.innerHTML = '';
+
+        if (qrInstance) {
+          qrInstance.clear();
+          qrInstance = null;
+        }
+
+        qrInstance = new QRCode(container, {
+          text: qrContent,
+          width: 240,
+          height: 240,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H,
+        });
+
+        document.getElementById('solana-url').value = qrContent;
+        document.getElementById('result').style.display = 'block';
+
+      } catch (e) {
+        document.getElementById('error').textContent = 'にゃっ…エラー: ' + e.message;
+        document.getElementById('error').style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🐾 QR コードを生成にゃ';
+      }
+    }
+  </script>
+</body>
+</html>

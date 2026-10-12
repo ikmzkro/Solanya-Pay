@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="sol" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9945FF"/>
+      <stop offset="1" stop-color="#14F195"/>
+    </linearGradient>
+  </defs>
+  <!-- 耳 -->
+  <path d="M18 58 L24 10 L56 34 Z" fill="url(#sol)"/>
+  <path d="M110 58 L104 10 L72 34 Z" fill="url(#sol)"/>
+  <path d="M27 44 L30 22 L46 35 Z" fill="#ffc2e0"/>
+  <path d="M101 44 L98 22 L82 35 Z" fill="#ffc2e0"/>
+  <!-- 顔 -->
+  <ellipse cx="64" cy="72" rx="50" ry="44" fill="url(#sol)"/>
+  <!-- 目 -->
+  <ellipse cx="44" cy="68" rx="7" ry="10" fill="#1a1a2e"/>
+  <ellipse cx="84" cy="68" rx="7" ry="10" fill="#1a1a2e"/>
+  <circle cx="46" cy="64" r="2.5" fill="#fff"/>
+  <circle cx="86" cy="64" r="2.5" fill="#fff"/>
+  <!-- 鼻と口 -->
+  <path d="M59 82 L69 82 L64 88 Z" fill="#ff7eb6"/>
+  <path d="M64 88 Q64 96 56 96 M64 88 Q64 96 72 96" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- ひげ -->
+  <g stroke="#1a1a2e" stroke-width="2.5" stroke-linecap="round">
+    <line x1="8" y1="78" x2="36" y2="82"/>
+    <line x1="8" y1="92" x2="36" y2="88"/>
+    <line x1="120" y1="78" x2="92" y2="82"/>
+    <line x1="120" y1="92" x2="92" y2="88"/>
+  </g>
+</svg>
