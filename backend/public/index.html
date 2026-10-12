@@ -80,6 +80,94 @@
       padding: 4px;
     }
 
+    /* dancing cat while waiting for the payment */
+    .dancer {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+      height: 76px;
+    }
+
+    .dance-cat {
+      width: 60px;
+      height: 60px;
+      animation: dance 0.8s ease-in-out infinite;
+    }
+
+    @keyframes dance {
+      0%   { transform: translateY(0) rotate(-14deg); }
+      25%  { transform: translateY(-16px) rotate(0deg) scale(1.08, 0.94); }
+      50%  { transform: translateY(0) rotate(14deg); }
+      75%  { transform: translateY(-16px) rotate(0deg) scale(1.08, 0.94); }
+      100% { transform: translateY(0) rotate(-14deg); }
+    }
+
+    .note {
+      color: #14F195;
+      font-size: 1.2rem;
+      animation: float 1.6s ease-in-out infinite;
+    }
+    .note:last-child { color: #9945FF; animation-delay: 0.8s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); opacity: 0.4; }
+      50%      { transform: translateY(-20px); opacity: 1; }
+    }
+
+    .status {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #e0e0e0;
+      margin-top: 6px;
+    }
+
+    /* scanned: the cat waits politely */
+    .dancer.scanned .dance-cat { animation: wait 1.2s ease-in-out infinite; }
+    @keyframes wait {
+      0%, 100% { transform: rotate(-6deg); }
+      50%      { transform: rotate(6deg); }
+    }
+
+    /* success screen */
+    #success-view { text-align: center; }
+
+    .success-cat {
+      width: 120px;
+      height: 120px;
+      margin-top: 8px;
+      animation: jump 0.9s ease-in-out infinite;
+    }
+
+    @keyframes jump {
+      0%, 100% { transform: translateY(0) scale(1); }
+      40%      { transform: translateY(-24px) scale(1.05) rotate(-6deg); }
+      60%      { transform: translateY(-24px) scale(1.05) rotate(6deg); }
+    }
+
+    .success-title {
+      font-size: 1.3rem;
+      color: #14F195;
+      margin-top: 16px;
+    }
+
+    .success-amount {
+      font-size: 2rem;
+      color: #e0e0e0;
+      margin-top: 12px;
+    }
+
+    .success-amount small { font-size: 0.9rem; color: #888; }
+
+    .explorer-link {
+      display: block;
+      margin-top: 6px;
+      color: #a0c4ff;
+      font-size: 0.8rem;
+      word-break: break-all;
+    }
+
     .paws {
       text-align: center;
       font-size: 0.9rem;
@@ -215,6 +303,7 @@
     <h1>Solanya Pay</h1>
     <p class="tagline">USDC を送るにゃ</p>
 
+    <div id="pay-view">
     <div class="field">
       <label>送金金額（にゃん）</label>
       <input id="usdc" type="number" value="1" min="0.01" step="0.01">
@@ -232,11 +321,27 @@
         <div id="qr-canvas"></div>
         <img class="qr-cat" src="/icon.svg" alt="">
       </div>
+      <div id="dancer" class="dancer">
+        <span class="note">♪</span>
+        <img class="dance-cat" src="/icon.svg" alt="踊る猫">
+        <span class="note">♫</span>
+      </div>
+      <p id="status-text" class="status">QR を読み取ってにゃ♪</p>
       <p class="hint">Phantom モバイルで QR をスキャンしてにゃ</p>
       <div class="url-row">
         <input id="solana-url" type="text" readonly>
         <button onclick="copyUrl()">コピー</button>
       </div>
+    </div>
+    </div>
+
+    <div id="success-view" style="display:none">
+      <img class="success-cat" src="/icon.svg" alt="喜ぶ猫">
+      <p class="success-title">送金できました！🎉</p>
+      <p class="success-amount"><span id="success-amount"></span> <small>USDC</small></p>
+      <p class="hint">Solana Explorer で取引を見る</p>
+      <a id="explorer-link" class="explorer-link" target="_blank" rel="noopener"></a>
+      <button onclick="resetPayment()">🐾 もう一度送るにゃ</button>
     </div>
 
     <p id="error" class="error" style="display:none"></p>
@@ -245,6 +350,63 @@
 
   <script>
     let qrInstance = null;
+    let pollTimer = null;
+
+    const POLL_INTERVAL_MS = 2000;
+    const POLL_TIMEOUT_MS = 5 * 60 * 1000;
+    const EXPLORER_CLUSTER = 'devnet';
+
+    function stopPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = null;
+    }
+
+    // Poll the server until the payment is confirmed on-chain
+    function startPolling(reference) {
+      stopPolling();
+      const startedAt = Date.now();
+      pollTimer = setInterval(async () => {
+        if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+          stopPolling();
+          showStatus('時間切れにゃ… QR を作り直してね', false);
+          return;
+        }
+        try {
+          const res = await fetch(`/payment/${reference}/status`);
+          if (!res.ok) return; // keep polling; transient RPC errors are logged on the server
+          const data = await res.json();
+          if (data.status === 'scanned') showStatus('ウォレットで承認してにゃ…', true);
+          if (data.status === 'paid') {
+            stopPolling();
+            showSuccess(data);
+          }
+        } catch (e) {
+          console.warn('status check failed', e);
+        }
+      }, POLL_INTERVAL_MS);
+    }
+
+    function showStatus(text, scanned) {
+      document.getElementById('status-text').textContent = text;
+      document.getElementById('dancer').classList.toggle('scanned', scanned);
+    }
+
+    function showSuccess(data) {
+      document.getElementById('success-amount').textContent = data.usdc_amount;
+      const link = document.getElementById('explorer-link');
+      const url = `https://explorer.solana.com/tx/${data.signature}?cluster=${EXPLORER_CLUSTER}`;
+      link.href = url;
+      link.textContent = url;
+      document.getElementById('pay-view').style.display = 'none';
+      document.getElementById('success-view').style.display = 'block';
+    }
+
+    function resetPayment() {
+      stopPolling();
+      document.getElementById('success-view').style.display = 'none';
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('pay-view').style.display = 'block';
+    }
 
     function copyUrl() {
       const el = document.getElementById('solana-url');
@@ -258,6 +420,7 @@
     async function requestQR() {
       const usdc = parseFloat(document.getElementById('usdc').value);
       if (!usdc || usdc <= 0) return;
+      stopPolling();
 
       const btn = document.getElementById('btn');
       btn.disabled = true;
@@ -304,7 +467,9 @@
         });
 
         document.getElementById('solana-url').value = qrContent;
+        showStatus('QR を読み取ってにゃ♪', false);
         document.getElementById('result').style.display = 'block';
+        startPolling(data.reference);
 
       } catch (e) {
         document.getElementById('error').textContent = 'にゃっ…エラー: ' + e.message;

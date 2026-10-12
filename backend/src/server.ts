@@ -3,6 +3,7 @@ import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 import path from "path";
 import { paymentRoute } from "./routes/payment";
+import { paymentStatusRoute } from "./routes/paymentStatus";
 import { transactionRoute } from "./routes/transaction";
 
 const fastify = Fastify({ logger: true });
@@ -13,6 +14,7 @@ fastify.register(fastifyStatic, {
 });
 
 fastify.register(paymentRoute);
+fastify.register(paymentStatusRoute);
 fastify.register(transactionRoute);
 
 const PORT = 3000;

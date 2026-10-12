@@ -1,24 +1,15 @@
 import { FastifyInstance } from "fastify";
-import {
-  Connection,
-  PublicKey,
-  Transaction,
-  clusterApiUrl,
-} from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import {
   createTransferCheckedInstruction,
   createAssociatedTokenAccountIdempotentInstruction,
   getAssociatedTokenAddress,
 } from "@solana/spl-token";
 
-import { getPayment } from "../paymentStore";
-import { USDC_MINT, USDC_DECIMALS, RECIPIENT, BASE_URL } from "../constants";
+import { getPayment, markScanned } from "../paymentStore";
+import { USDC_MINT, USDC_DECIMALS, RECIPIENT, BASE_URL, toUsdcBaseUnits } from "../constants";
+import { connection } from "../connection";
 import { TransactionQuery, TransactionBody } from "../types/interface";
-
-const connection = new Connection(
-  process.env.SOLANA_RPC_URL ?? clusterApiUrl("devnet"),
-  "confirmed"
-);
 
 export async function transactionRoute(fastify: FastifyInstance) {
   // (1) The wallet fetches the label and icon
@@ -27,6 +18,7 @@ export async function transactionRoute(fastify: FastifyInstance) {
     async (request, reply) => {
       const { reference } = request.query;
       fastify.log.info({ step: "1", reference }, "[SEQ] GET /transaction - wallet scanned the QR code, returning label/icon");
+      if (reference) markScanned(reference);
       return reply.send({
         label: "Solanya Pay",
         icon: `${BASE_URL}/icon.svg`,
@@ -58,6 +50,7 @@ export async function transactionRoute(fastify: FastifyInstance) {
         return reply.status(404).send({ error: "Payment request not found or expired" });
       }
       fastify.log.info({ usdcAmount: payment.usdcAmount }, "[SEQ] (2) payment request found");
+      markScanned(reference);
 
       let userPubkey: PublicKey;
       let refPubkey: PublicKey;
@@ -74,7 +67,7 @@ export async function transactionRoute(fastify: FastifyInstance) {
       const recipientTokenAccount = await getAssociatedTokenAddress(USDC_MINT, RECIPIENT);
       fastify.log.info({ userTokenAccount: userTokenAccount.toBase58(), recipientTokenAccount: recipientTokenAccount.toBase58() }, "[SEQ] (2) token accounts resolved");
 
-      const transferAmount = BigInt(Math.round(payment.usdcAmount * 10 ** USDC_DECIMALS));
+      const transferAmount = toUsdcBaseUnits(payment.usdcAmount);
       fastify.log.info({ transferAmount: transferAmount.toString(), usdcAmount: payment.usdcAmount }, "[SEQ] (2) transfer amount calculated");
 
       const { blockhash } = await connection.getLatestBlockhash();

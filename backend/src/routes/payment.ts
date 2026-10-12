@@ -17,7 +17,7 @@ export async function paymentRoute(fastify: FastifyInstance) {
     const ref58 = reference.toBase58();
 
     // Save the payment request (looked up by the /transaction endpoint)
-    savePayment({ usdcAmount: usdc_amount, reference: ref58 });
+    savePayment({ usdcAmount: usdc_amount, reference: ref58, status: "waiting" });
 
     // Transaction Request URL: solana:https://...
     const link = new URL(`${BASE_URL}/transaction`);

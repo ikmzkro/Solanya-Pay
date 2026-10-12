@@ -21,6 +21,10 @@ export const RECIPIENT = new PublicKey(process.env.RECIPIENT_PUBKEY);
 // USDC decimals (always 6 on Solana)
 export const USDC_DECIMALS = 6;
 
+export function toUsdcBaseUnits(usdcAmount: number): bigint {
+  return BigInt(Math.round(usdcAmount * 10 ** USDC_DECIMALS));
+}
+
 // Public URL of the backend (overridden by BASE_URL)
 export const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
 

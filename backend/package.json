@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "tsx src/server.ts",
-    "prod": "NODE_ENV=production tsx src/server.ts"
+    "prod": "NODE_ENV=production tsx src/server.ts",
+    "test": "tsx --test src/__tests__/*.test.ts"
   },
   "dependencies": {
     "@fastify/static": "^6.12.0",
