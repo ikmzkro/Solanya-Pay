@@ -112,7 +112,7 @@ export async function transactionRoute(fastify: FastifyInstance) {
       fastify.log.info({ usdcAmount: payment.usdcAmount }, "[SEQ] (2) transaction built and returned to the wallet. Next: user approves -> signs -> broadcasts");
       return reply.send({
         transaction: base64,
-        message: `Solanya Pay: ${payment.usdcAmount} USDC 送るにゃ 🐾`,
+        message: `Solanya Pay: Send ${payment.usdcAmount} USDC, nya 🐾`,
       });
     }
   );

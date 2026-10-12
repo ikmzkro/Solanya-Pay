@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -299,22 +299,22 @@
 </head>
 <body>
   <div class="demo">
-    <img class="logo" src="/icon.svg" alt="Solanya Pay の猫">
+    <img class="logo" src="/icon.svg" alt="Solanya Pay cat">
     <h1>Solanya Pay</h1>
-    <p class="tagline">USDC を送るにゃ</p>
+    <p class="tagline">Send USDC, nya~</p>
 
     <div id="pay-view">
     <div class="field">
-      <label>送金金額（にゃん）</label>
+      <label>Amount (meow)</label>
       <input id="usdc" type="number" value="1" min="0.01" step="0.01">
       <div class="unit">USDC</div>
     </div>
 
-    <button id="btn" onclick="requestQR()">🐾 QR コードを生成にゃ</button>
+    <button id="btn" onclick="requestQR()">🐾 Generate QR code, nya</button>
 
     <div id="result" style="display:none">
       <div class="info-row">
-        <span>送金 USDC</span>
+        <span>Amount</span>
         <span id="usdc-val"></span>
       </div>
       <div id="qr-wrapper">
@@ -323,25 +323,25 @@
       </div>
       <div id="dancer" class="dancer">
         <span class="note">♪</span>
-        <img class="dance-cat" src="/icon.svg" alt="踊る猫">
+        <img class="dance-cat" src="/icon.svg" alt="Dancing cat">
         <span class="note">♫</span>
       </div>
-      <p id="status-text" class="status">QR を読み取ってにゃ♪</p>
-      <p class="hint">Phantom モバイルで QR をスキャンしてにゃ</p>
+      <p id="status-text" class="status">Scan the QR code, nya ♪</p>
+      <p class="hint">Scan with Phantom mobile, nya</p>
       <div class="url-row">
         <input id="solana-url" type="text" readonly>
-        <button onclick="copyUrl()">コピー</button>
+        <button onclick="copyUrl()">Copy</button>
       </div>
     </div>
     </div>
 
     <div id="success-view" style="display:none">
-      <img class="success-cat" src="/icon.svg" alt="喜ぶ猫">
-      <p class="success-title">送金できました！🎉</p>
+      <img class="success-cat" src="/icon.svg" alt="Happy cat">
+      <p class="success-title">Payment sent! 🎉</p>
       <p class="success-amount"><span id="success-amount"></span> <small>USDC</small></p>
-      <p class="hint">Solana Explorer で取引を見る</p>
+      <p class="hint">View the transaction on Solana Explorer</p>
       <a id="explorer-link" class="explorer-link" target="_blank" rel="noopener"></a>
-      <button onclick="resetPayment()">🐾 もう一度送るにゃ</button>
+      <button onclick="resetPayment()">🐾 Send again, nya</button>
     </div>
 
     <p id="error" class="error" style="display:none"></p>
@@ -368,14 +368,14 @@
       pollTimer = setInterval(async () => {
         if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
           stopPolling();
-          showStatus('時間切れにゃ… QR を作り直してね', false);
+          showStatus("Time's up, nya... Please generate a new QR code", false);
           return;
         }
         try {
           const res = await fetch(`/payment/${reference}/status`);
           if (!res.ok) return; // keep polling; transient RPC errors are logged on the server
           const data = await res.json();
-          if (data.status === 'scanned') showStatus('ウォレットで承認してにゃ…', true);
+          if (data.status === 'scanned') showStatus('Approve in your wallet, nya...', true);
           if (data.status === 'paid') {
             stopPolling();
             showSuccess(data);
@@ -412,8 +412,8 @@
       const el = document.getElementById('solana-url');
       navigator.clipboard.writeText(el.value).then(() => {
         const btn = el.nextElementSibling;
-        btn.textContent = 'にゃ！';
-        setTimeout(() => { btn.textContent = 'コピー'; }, 1500);
+        btn.textContent = 'Nya!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
       });
     }
 
@@ -424,7 +424,7 @@
 
       const btn = document.getElementById('btn');
       btn.disabled = true;
-      btn.textContent = 'ねこ考え中...';
+      btn.textContent = 'Cat is thinking...';
 
       document.getElementById('result').style.display = 'none';
       document.getElementById('error').style.display = 'none';
@@ -467,16 +467,16 @@
         });
 
         document.getElementById('solana-url').value = qrContent;
-        showStatus('QR を読み取ってにゃ♪', false);
+        showStatus('Scan the QR code, nya ♪', false);
         document.getElementById('result').style.display = 'block';
         startPolling(data.reference);
 
       } catch (e) {
-        document.getElementById('error').textContent = 'にゃっ…エラー: ' + e.message;
+        document.getElementById('error').textContent = 'Nyaa... Error: ' + e.message;
         document.getElementById('error').style.display = 'block';
       } finally {
         btn.disabled = false;
-        btn.textContent = '🐾 QR コードを生成にゃ';
+        btn.textContent = '🐾 Generate QR code, nya';
       }
     }
   </script>

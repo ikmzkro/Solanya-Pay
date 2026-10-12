@@ -93,7 +93,7 @@ This script:
 ### 4. Pay
 
 1. Open http://localhost:3000
-2. Enter an amount and click **🐾 QR コードを生成にゃ** ("Generate QR code, nya")
+2. Enter an amount and click **🐾 Generate QR code, nya**
 3. Scan the QR code with your wallet and approve
 
 The tunnel URL changes every time the script starts, so regenerate the QR code after a restart.
